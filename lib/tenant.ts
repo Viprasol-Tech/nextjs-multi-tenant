@@ -111,3 +111,56 @@ function extractSingleLabel(
   if (reserved.has(prefix)) return null;
   return prefix;
 }
+
+/** How a tenant was matched against a request host. */
+export type TenantSource = "subdomain" | "custom-domain" | "none";
+
+export interface ResolvedTenant {
+  /** The tenant slug, or `null` when the host maps to the root app. */
+  slug: string | null;
+  /** Whether the match came from a subdomain, a custom domain, or nothing. */
+  source: TenantSource;
+  /** The normalized host the decision was made from (port/case stripped). */
+  host: string | null;
+}
+
+export interface ResolveTenantRequestOptions extends ResolveTenantOptions {
+  /**
+   * Map of fully-qualified custom domains (e.g. `acme.com`) to the tenant slug
+   * that owns them. Checked before subdomain resolution so a vanity domain
+   * wins even if it happens to be a subdomain of the base domain.
+   */
+  customDomains?: Record<string, string>;
+}
+
+/**
+ * Resolve a tenant from a host, considering custom (vanity) domains first and
+ * falling back to subdomain extraction. Unlike {@link resolveTenant}, this
+ * reports *how* the tenant was matched, which the middleware uses for logging
+ * and headers.
+ *
+ * Resolution order:
+ *  1. Exact match against a configured custom domain -> `custom-domain`.
+ *  2. Subdomain of the base domain -> `subdomain`.
+ *  3. Otherwise -> `none` (root / marketing app).
+ */
+export function resolveTenantRequest(
+  host: string | null | undefined,
+  options: ResolveTenantRequestOptions = {},
+): ResolvedTenant {
+  const normalized = normalizeHost(host);
+  if (!normalized) return { slug: null, source: "none", host: null };
+
+  const customDomains = options.customDomains ?? {};
+  const customSlug = customDomains[normalized];
+  if (customSlug && isValidSlug(customSlug)) {
+    return { slug: customSlug, source: "custom-domain", host: normalized };
+  }
+
+  const subdomainSlug = resolveTenant(normalized, options);
+  if (subdomainSlug) {
+    return { slug: subdomainSlug, source: "subdomain", host: normalized };
+  }
+
+  return { slug: null, source: "none", host: normalized };
+}

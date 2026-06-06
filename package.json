@@ -1,6 +1,6 @@
 {
   "name": "nextjs-multi-tenant",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Next.js multi-tenant starter — subdomain/path tenant resolution with middleware.",
   "private": true,
   "license": "MIT",
@@ -20,6 +20,9 @@
     "typescript",
     "middleware",
     "subdomain",
+    "custom-domain",
+    "feature-flags",
+    "plan-gating",
     "app-router"
   ],
   "scripts": {
