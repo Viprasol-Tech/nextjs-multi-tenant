@@ -8,11 +8,12 @@ export function generateStaticParams() {
   return listTenants().map((tenant) => ({ tenant: tenant.slug }));
 }
 
-export default function TenantPage({
-  params,
-}: {
-  params: { tenant: string };
-}) {
+export default async function TenantPage(
+  props: {
+    params: Promise<{ tenant: string }>;
+  }
+) {
+  const params = await props.params;
   const tenant = getTenant(params.tenant);
   if (!tenant) {
     notFound();

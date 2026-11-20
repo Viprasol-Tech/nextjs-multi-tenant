@@ -15,11 +15,12 @@ export function generateStaticParams() {
   return listTenants().map((tenant) => ({ tenant: tenant.slug }));
 }
 
-export default function TenantAdminPage({
-  params,
-}: {
-  params: { tenant: string };
-}) {
+export default async function TenantAdminPage(
+  props: {
+    params: Promise<{ tenant: string }>;
+  }
+) {
+  const params = await props.params;
   const tenant = getTenant(params.tenant);
   if (!tenant) {
     notFound();
